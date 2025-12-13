@@ -7,7 +7,7 @@ import http from "http";
 const app = express();
 app.use(express.json());
 
-// ✅ ENDPOINT RAÍZ (IMPRESCINDIBLE PARA RAILWAY)
+// ✅ HEALTH CHECK ROOT (CLAVE PARA RAILWAY)
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
@@ -45,21 +45,20 @@ app.post("/merge-audio", async (req, res) => {
 
     exec(cmd, (error) => {
       if (error) {
-        console.error(error);
         return res.status(500).json({ error: "FFmpeg falló" });
       }
       res.sendFile(outputPath, { root: "." });
     });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Error general" });
   }
 });
 
+// ✅ ESCUCHAR EN EL PUERTO QUE RAILWAY INYECTA
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Servidor listo en puerto", PORT);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
 });
 
 
