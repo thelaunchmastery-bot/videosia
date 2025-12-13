@@ -7,27 +7,33 @@ import http from "http";
 const app = express();
 app.use(express.json());
 
-// 🔹 Endpoint raíz para Railway healthcheck
+/* ---------- HEALTH CHECK (CLAVE PARA RAILWAY) ---------- */
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
 
+/* ---------- UTILIDAD PARA DESCARGAR ARCHIVOS ---------- */
 const downloadFile = (url, path) =>
   new Promise((resolve, reject) => {
     const protocol = url.startsWith("https") ? https : http;
-    protocol.get(url, response => {
-      const file = fs.createWriteStream(path);
-      response.pipe(file);
-      file.on("finish", () => file.close(resolve));
-    }).on("error", reject);
+    protocol
+      .get(url, response => {
+        const file = fs.createWriteStream(path);
+        response.pipe(file);
+        file.on("finish", () => file.close(resolve));
+      })
+      .on("error", reject);
   });
 
+/* ---------- ENDPOINT PRINCIPAL ---------- */
 app.post("/merge-audio", async (req, res) => {
   try {
     const { videoUrl, musicUrl } = req.body;
 
     if (!videoUrl || !musicUrl) {
-      return res.status(400).json({ error: "videoUrl y musicUrl son obligatorios" });
+      return res.status(400).json({
+        error: "videoUrl y musicUrl son obligatorios",
+      });
     }
 
     const videoPath = "video.mp4";
@@ -39,5 +45,26 @@ app.post("/merge-audio", async (req, res) => {
 
     const cmd = `
       ffmpeg -y -i ${videoPath} -i ${musicPath} \
-      -f
+      -filter_complex "[1:a]volume=0.15[a1];[0:a][a1]amix=inputs=2:duration=first" \
+      -c:v copy ${outputPath}
+    `;
 
+    exec(cmd, error => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "FFmpeg falló" });
+      }
+      res.sendFile(outputPath, { root: "." });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error general" });
+  }
+});
+
+/* ---------- PUERTO RAILWAY (SIN HISTORIAS) ---------- */
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
+});
