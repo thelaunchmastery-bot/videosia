@@ -7,7 +7,7 @@ import http from "http";
 const app = express();
 app.use(express.json());
 
-// ✅ HEALTH CHECK ROOT (CLAVE PARA RAILWAY)
+// 🔹 Endpoint raíz para Railway healthcheck
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
@@ -39,26 +39,5 @@ app.post("/merge-audio", async (req, res) => {
 
     const cmd = `
       ffmpeg -y -i ${videoPath} -i ${musicPath} \
-      -filter_complex "[1:a]volume=0.15[a1];[0:a][a1]amix=inputs=2:duration=first" \
-      -c:v copy ${outputPath}
-    `;
-
-    exec(cmd, (error) => {
-      if (error) {
-        return res.status(500).json({ error: "FFmpeg falló" });
-      }
-      res.sendFile(outputPath, { root: "." });
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: "Error general" });
-  }
-});
-
-// ✅ ESCUCHAR EN EL PUERTO QUE RAILWAY INYECTA
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor escuchando en puerto ${PORT}`);
-});
-
+      -f
 
